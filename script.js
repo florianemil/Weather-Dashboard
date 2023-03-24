@@ -1,94 +1,89 @@
-var city = $("#searchTerm").val();
-var apiKey = "67442ed21f58d53723ace2bf235e9ae7";
+let APIKey = "67442ed21f58d53723ace2bf235e9ae7";
+let weatherReportDetails = document.querySelector("#weatherReportDetails");
+let weatherReport = "";
+let longitude = "";
+let latitude = "";
+let fiveDayForecast = document.querySelector("#fiveDayForecast")
+let searchInput = document.querySelector("#search-input");
+let history = document.querySelector("#history")
+let historyContainer = document.querySelector("#historyContainer")
 
-$("#searchBtn").on("click", function (event) {
-  event.preventDefault();
-  // console.log("searchBtn");
-  $("#five-day-forecast").addClass("show");
-  // console.log("five-day-forecast");
 
-  // user input value
-  city = $("#searchTerm").val();
+function coordinates (){
+    let cityname = searchInput.value;
+    let queryURL =  "https://api.openweathermap.org/geo/1.0/direct?q=" + cityname + "&appid=67442ed21f58d53723ace2bf235e9ae7"
+    fetch(queryURL)
+    .then(response => response.json())
+    .then(function (result) {
+        longitude = result[0].lon;
+        latitude = result[0].lat;
 
-  $("#searchTerm").val("");
+        let cityButton = document.createElement("button");
+        cityButton.textContent = cityname;
+        cityButton.addEventListener("click", function(){
+            searchInput.value = cityname;
+            coordinates();
+        });
+        historyContainer.append(cityButton);
 
-  var UVIndex = function (ln, lt) {
-    // One Call Api for the UV index
-    var uvIndexApi =
-      "https://api.openweathermap.org/data/2.5/onecall?lat=" +//67442ed21f58d53723ace2bf235e9ae7
-      lt +
-      "&lon=" +
-      ln +
-      "&appid=" +
-      "67442ed21f58d53723ace2bf235e9ae7";
-  };
+        localStorage.setItem(cityname, JSON.stringify({longitude: longitude, latitude: latitude}));
+        displayWeatherReportDetails();
+        displayfiveDayForecast();
+    });
+}
 
-  /* need for API CAll
-    lat, lon
-    api key
-    */
+function  displayWeatherReportDetails(){
+    
+    let queryURL = "https://api.openweathermap.org/data/2.5/forecast?lat=" + latitude + "&lon=" + longitude + "&appid=67442ed21f58d53723ace2bf235e9ae7";
+    
+    
+    fetch(queryURL)
+    .then(response => response.json())
+    .then(function (result) {
+        
+        let formatDate = moment(result.list[0].dt_txt).format("D MMM YYYY")
+        weatherReportDetails.innerHTML = `<h1>${result.city.name}</h1> <p>${formatDate}
+        <p>${"Temp: " + result.list[0].main.temp}</p>
+        <p>${"Humidity: " + result.list[0].main.humidity}</p>
+        <p>${"Wind: " + result.list[0].wind.speed}</p>
+        <img src="${'https://openweathermap.org/img/w/' + result.list[0].weather[0].icon + '.png'}">`;
+        
+    });
 
-  // Five Day Forecast API to get the five day forecast
-  var fiveDayForecastApi =
-    "https://api.openweathermap.org/data/2.5/forecast?q=" +
-    city +
-    "&appid=" +
-    apikey;
+}
 
-  // Current Weather API to get the current weather
-  var currentWeatherApi =
-    "https://api.openweathermap.org/data/2.5/weather?q=" +
-    city +
-    "&appid=" +
-    apiKey;
-  console.log(apiUrl);
-  fetch(apiUrl).then(function (response) {
-    if (response.ok) {
-      response.json().then(function (data) {
-        console.log(data);
-      });
-    }
-  });
-});
+function displayfiveDayForecast(){
 
-var displayList = function () {
-  var listItem = $("<li>").addClass("list-group-item").text(city);
-  $(".list").append(listItem);
+    fiveDayForecast.textContent = ""
+    
+    let queryURL = "https://api.openweathermap.org/data/2.5/forecast?lat=" + latitude + "&lon=" + longitude + "&appid=67442ed21f58d53723ace2bf235e9ae7";
+    
+    
+    fetch(queryURL)
+    .then(response => response.json())
+    .then(function (result) {
+
+        
+        let weatherArray = result.list;
+        
+        for (let i = 6; i < weatherArray.length; i = i + 7) {
+            const weatherDay = weatherArray[i];
+            let formatFiveDate = moment(weatherDay.dt_txt).format("D MMM YYYY")
+            
+            fiveDayForecast.innerHTML += `<div class="m-3 p-2 bg-primary"><p>${formatFiveDate}</p>
+            <p>${"Temp: " + weatherDay.main.temp}</p>
+            <p>${"Humidity: " + weatherDay.main.humidity}
+            <img src="${'https://openweathermap.org/img/w/' + weatherDay.weather[0].icon + '.png'}"></div>`;
+            
+        }
+        
+    })
+    
 };
 
-var getCurrentWeather = function () {
-  var tempF = function () {
-    tempF = Math.floor(tempF);
-  };
+document.querySelector("#search-button").addEventListener("click", function(event){
+    event.preventDefault();
 
-  $("#currentCity").empty();
+    coordinates()
 
-  var card = $("<div>").addClass("card");
-  var cardBody = $("<div").addClass("card-body");
-  var city = $("<h4>").addClass("card-title").text(response.name);
-  var cityDate = $("<h4>")
-    .addClass("card-title")
-    .text(date.toLocalDateString("en-US"));
-  var temperature = $("<p>")
-    .addClass("card-text current-temp")
-    .text("Temperature: " + tempF + " F");
-  var humidity = $("<p>").addClass("card-text current-humidity");
-};
-
-// var restaurantInfo = $('<div><p>' + restaurantList[randomlySelectedRestaurant].restaurant_name + '</p></div>');
-
-/* Data that needs to be pulled from the api
-Current Temp use currentWeatherApi:
-    weather icon - weather["index of", 0].icon / weather.icon
-    Temp - main.temp
-    WInd - wind.speed
-    Humidity - main.humidity
-
- UV Index use uvIndexApi:   
-    UV Index - current.uvi
-
-5-day Forecast use fiveDayForecastApi:
-    Temp - main.temp
-    WInd - wind.speed
-    Humidity - main.humidity
-*/
+})
